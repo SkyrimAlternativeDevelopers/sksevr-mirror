@@ -50,7 +50,7 @@ public:
 
 	char *	m_pcName;	// 10
 
-	static NiExtraData* Create(UInt32 size, UInt32 vtbl);
+	static NiExtraData* Create(UInt32 size, uintptr_t vtbl);
 };
 STATIC_ASSERT(sizeof(NiExtraData) == 0x18);
 

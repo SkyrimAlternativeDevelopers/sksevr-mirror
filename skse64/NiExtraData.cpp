@@ -9,14 +9,14 @@ RelocAddr<uintptr_t> s_NiStringsExtraDataVtbl(0x017F0A20);
 // ??_7NiBinaryExtraData@@6B@
 RelocAddr<uintptr_t> s_NiBinaryExtraDataVtbl(0x017F5090);
 
-NiExtraData* NiExtraData::Create(UInt32 size, UInt32 vtbl)
+NiExtraData* NiExtraData::Create(UInt32 size, uintptr_t vtbl)
 {
-	void* memory = Heap_Allocate(size);
-	memset(memory, 0, size);
-	NiExtraData* xData = (NiExtraData*)memory;
-	((UInt32*)memory)[0] = vtbl;
-	return xData;
-}
+    void* memory = Heap_Allocate(size);
+    memset(memory, 0, size);
+    NiExtraData* xData = (NiExtraData*)memory;
+    ((uintptr_t*)memory)[0] = vtbl;
+    return xData;
+} 
 
 NiStringsExtraData * NiStringsExtraData::Create(BSFixedString name, BSFixedString * stringData, UInt32 size)
 {
