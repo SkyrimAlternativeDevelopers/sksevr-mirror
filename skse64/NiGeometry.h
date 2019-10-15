@@ -31,7 +31,7 @@ public:
 
 	NiPropertyPtr		m_spPropertyState;	// 110
 	NiPropertyPtr		m_spEffectState;	// 118
-	NiSkinInstancePtr	m_spSkinInstance;	// 120
+	NiSkinInstancePtr	m_spSkinInstance;	// 120  // NOTE: Is this the wrong order? swap order with spModelData?
 	NiGeometryDataPtr	m_spModelData;		// 128
 	UInt64				unk130;				// 130
 };
@@ -39,6 +39,9 @@ public:
 class NiTriBasedGeom : public NiGeometry
 {
 public:
+
+	//CD7F70 -> 0x00C90F90 (from SE)
+	DEFINE_MEMBER_FN_1(ctor, NiTriBasedGeom*, 0x00CD7F70, NiTriShapeData* geometry);
 };
 
 class NiTriShape : public NiTriBasedGeom
@@ -46,8 +49,6 @@ class NiTriShape : public NiTriBasedGeom
 public:
 	static NiTriShape * Create(NiTriShapeData * geometry);
 
-	MEMBER_FN_PREFIX(NiTriShape);
-	DEFINE_MEMBER_FN(ctor, NiTriShape *, 0x00000000, NiTriShapeData * geometry);
 };
 
 class BSSegmentedTriShape : public NiTriShape
@@ -59,10 +60,7 @@ public:
 class NiTriStrips : public NiTriBasedGeom
 {
 public:
-	static NiTriStrips * Create(NiTriStripsData * geometry);
-
-	MEMBER_FN_PREFIX(NiTriStrips);
-	DEFINE_MEMBER_FN(ctor, NiTriStrips *, 0x00000000, NiTriStripsData * geometry);
+	static NiTriStrips * Create(NiTriShapeData * geometry);
 };
 
 class BSGeometryData
@@ -94,7 +92,7 @@ public:
 	NiSkinInstancePtr	m_spSkinInstance;	// 130
 	BSGeometryData		* geometryData;		// 138
 	UInt64				unk140;				// 140
-	UInt64				unk148;				// 148
+	UInt64				vertexDesc;			// 148
 	UInt8				unk150;				// 150 - type? 3, 4
 	UInt8				unk151;				// 151
 	UInt16				unk152;				// 152
@@ -108,10 +106,29 @@ public:
 	virtual ~BSTriShape();
 
 	UInt16				unk158;				// 158
-	UInt16				unk15A;				// 15A
+	UInt16				numVertices;		// 15A
 	UInt16				unk15C;				// 15C
 	UInt16				unk15D;				// 15D
 };
+
+
+typedef BSTriShape* (*_CreateBSTriShape)();
+extern RelocAddr<_CreateBSTriShape> CreateBSTriShape;
+
+// 180
+class BSDynamicTriShape : public BSTriShape
+{
+public:
+	float* diffBlock;
+	UInt64	unk168;
+	UInt64	unk170;
+	float	unk178;
+	float	unk17C;
+
+	//  SE: 0x00C71E50  VR: CB86B0
+	DEFINE_MEMBER_FN_0(ctor, BSDynamicTriShape*, 0x00CB86B0);
+};
+
 
 // 48+
 class NiGeometryData : public NiObject
@@ -218,13 +235,103 @@ public:
 	UInt16				m_usSharedNormalsArraySize;	// 56
 };
 
+enum VertexAttribute : UInt8
+{
+	VA_POSITION = 0x0,
+	VA_TEXCOORD0 = 0x1,
+	VA_TEXCOORD1 = 0x2,
+	VA_NORMAL = 0x3,
+	VA_BINORMAL = 0x4,
+	VA_COLOR = 0x5,
+	VA_SKINNING = 0x6,
+	VA_LANDDATA = 0x7,
+	VA_EYEDATA = 0x8,
+	VA_COUNT = 9
+};
+enum VertexFlags : UInt16
+{
+	VF_VERTEX = 1 << VA_POSITION,
+	VF_UV = 1 << VA_TEXCOORD0,
+	VF_UV_2 = 1 << VA_TEXCOORD1,
+	VF_NORMAL = 1 << VA_NORMAL,
+	VF_TANGENT = 1 << VA_BINORMAL,
+	VF_COLORS = 1 << VA_COLOR,
+	VF_SKINNED = 1 << VA_SKINNING,
+	VF_LANDDATA = 1 << VA_LANDDATA,
+	VF_EYEDATA = 1 << VA_EYEDATA,
+	VF_FULLPREC = 0x400
+};
+enum VertexMasks : UInt64
+{
+	DESC_MASK_VERT = 0xFFFFFFFFFFFFFFF0LL,
+	DESC_MASK_UVS = 0xFFFFFFFFFFFFFF0FLL,
+	DESC_MASK_NBT = 0xFFFFFFFFFFFFF0FFLL,
+	DESC_MASK_SKCOL = 0xFFFFFFFFFFFF0FFFLL,
+	DESC_MASK_DATA = 0xFFFFFFFFFFF0FFFFLL,
+	DESC_MASK_OFFSET = 0xFFFFFF0000000000LL,
+	DESC_MASK_FLAGS = ~(DESC_MASK_OFFSET)
+};
 // 10
 class NiSkinPartition : public NiObject
 {
 public:
+	static UInt32 GetVertexAttributeOffset(UInt64 vertexDesc, VertexAttribute attr) {
+		return (vertexDesc >> (4 * (UInt8)attr + 2)) & 0x3C;
+	}
+	static VertexFlags GetVertexFlags(UInt64 vertexDesc) {
+		return VertexFlags((vertexDesc & DESC_MASK_OFFSET) >> 44);
+	}
+	static UInt32 GetVertexSize(UInt64 vertexDesc)
+	{
+		UInt32 vertexSize = 0;
+		VertexFlags flags = GetVertexFlags(vertexDesc);
+		if (flags & VF_VERTEX)
+		{
+			vertexSize += sizeof(float) * 4;
+		}
+		if (flags & VF_UV)
+		{
+			vertexSize += sizeof(UInt16) * 2;
+		}
+		if (flags & VF_UV_2)
+		{
+			vertexSize += sizeof(UInt16) * 2;
+		}
+		if (flags & VF_NORMAL)
+		{
+			vertexSize += sizeof(UInt16) * 2;
+			if (flags & VF_TANGENT)
+			{
+				vertexSize += sizeof(UInt16) * 2;
+			}
+		}
+		if (flags & VF_COLORS)
+		{
+			vertexSize += sizeof(UInt8) * 4;
+		}
+		if (flags & VF_SKINNED)
+		{
+			vertexSize += sizeof(UInt16) * 4 + sizeof(UInt8) * 4;
+		}
+		if (flags & VF_EYEDATA)
+		{
+			vertexSize += sizeof(float);
+		}
+		return vertexSize;
+	}
 	// 28
+	struct TriShape
+	{
+		struct ID3D11Buffer	* m_VertexBuffer;
+		struct ID3D11Buffer	* m_IndexBuffer;
+		uint64_t			m_VertexDesc;
+		uint32_t			m_RefCount;
+		UInt8				* m_RawVertexData;
+		UInt16				* m_RawIndexData;
+	};
 	struct Partition
 	{
+		UInt64		vertexDesc;				// 30
 		UInt16		* m_pusBones;			// 00
 		float		* m_pfWeights;			// 04
 		UInt16		* m_pusVertexMap;		// 08
@@ -236,14 +343,17 @@ public:
 		UInt16		m_usBones;				// 1C
 		UInt16		m_usStrips;				// 1E
 		UInt16		m_usBonesPerVertex;		// 20
-		UInt8		pad22[2];				// 22
-		UInt32		unk24;					// 24
+		float		unk44;					// 44
+		TriShape	* shapeData;			// 48
 
 		void	AllocateWeights(UInt32 numVerts);
 	};
 
 	UInt32		m_uiPartitions;		// 08
+	UInt32		unk14;				// 14
 	Partition	* m_pkPartitions;	// 0C
+	UInt32		vertexCount;		// 20
+	UInt32		unk24;				// 24
 };
 
 // 48

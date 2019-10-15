@@ -2,6 +2,17 @@
 #include "skse64/NiAllocator.h"
 #include "skse64/GameAPI.h"
 
+// SE: 0x00C66FE0  VR: CAD6D0
+RelocAddr<_CreateBSTriShape> CreateBSTriShape(0x00CAD6D0);
+
+// Fix for VR: 17F7058
+// ??_7NiTriShape@@6B@
+static const RelocPtr<uintptr_t> s_NiTriShapeVtbl(0x017F7058);
+
+// Fix for VR:  17F75A8
+// ??_7NiTriStrips@@6B@
+static const RelocPtr<uintptr_t> s_NiTriStripsVtbl(0x017F75A8);
+
 void NiGeometryData::AllocateVerts(UInt32 numVerts)
 {
 	m_pkVertex = (NiPoint3 *)Heap_Allocate(sizeof(NiPoint3) * numVerts);
@@ -62,6 +73,27 @@ BSDismemberSkinInstance * BSDismemberSkinInstance::Create()
 	return xData;
 }
 
+NiTriShape * NiTriShape::Create(NiTriShapeData * geometry)
+{
+	void* memory = Heap_Allocate(sizeof(NiTriShape));
+	memset(memory, 0, sizeof(NiTriShape));
+	NiTriShape* xData = (NiTriShape*)memory;
+	xData->ctor(geometry);
+	((uintptr_t *)memory)[0] = s_NiTriShapeVtbl.GetUIntPtr();
+	return xData;
+}
+
+NiTriStrips * NiTriStrips::Create(NiTriShapeData * geometry)
+{
+	void* memory = Heap_Allocate(sizeof(NiTriStrips));
+	memset(memory, 0, sizeof(NiTriStrips));
+	NiTriStrips* xData = (NiTriStrips*)memory;
+	xData->ctor(geometry);
+	((uintptr_t *)memory)[0] = s_NiTriStripsVtbl.GetUIntPtr();
+	return xData;
+}
+
+// TODO: Update code from latest SKSE SE?
 NiSkinInstance * NiSkinInstance::Clone(bool reuse)
 {
 	NiSkinInstance * newSkinInstance = CALL_MEMBER_FN(this, Copy)();
