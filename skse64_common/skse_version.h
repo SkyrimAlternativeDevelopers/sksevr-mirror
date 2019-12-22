@@ -31,6 +31,11 @@
 #define RUNTIME_VERSION_1_5_16	MAKE_EXE_VERSION(1, 5, 16)	// 0x01050100	creation club cleanup (thanks)
 #define RUNTIME_VERSION_1_5_23	MAKE_EXE_VERSION(1, 5, 23)	// 0x01050170	creation club
 #define RUNTIME_VERSION_1_5_39	MAKE_EXE_VERSION(1, 5, 39)	// 0x01050270	creation club
+#define RUNTIME_VERSION_1_5_50	MAKE_EXE_VERSION(1, 5, 50)	// 0x01050320	creation club
+#define RUNTIME_VERSION_1_5_53	MAKE_EXE_VERSION(1, 5, 53)	// 0x01050350	creation club
+#define RUNTIME_VERSION_1_5_62	MAKE_EXE_VERSION(1, 5, 62)	// 0x010503E0	creation club
+#define RUNTIME_VERSION_1_5_73	MAKE_EXE_VERSION(1, 5, 73)	// 0x01050490	creation club
+#define RUNTIME_VERSION_1_5_80	MAKE_EXE_VERSION(1, 5, 80)	// 0x01050500	creation club - no code or data differences
 
 // VR versions
 #define RUNTIME_VR_VERSION_1_3_59	MAKE_EXE_VR_VERSION(1, 3, 59)	// 0x010303B1	

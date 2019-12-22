@@ -5,6 +5,7 @@
 #include "skse64/Serialization.h"
 #include "skse64_common/skse_version.h"
 #include "skse64/PapyrusEvents.h"
+#include "skse64_common/BranchTrampoline.h"
 
 PluginManager	g_pluginManager;
 
@@ -85,6 +86,13 @@ static const SKSEObjectInterface g_SKSEObjectInterface =
 	SKSEDelayFunctorManagerInstance,
 	SKSEObjectRegistryInstance,
 	SKSEObjectStorageInstance
+};
+
+static const SKSETrampolineInterface g_SKSETrampolineInterface =
+{
+	SKSETrampolineInterface::kInterfaceVersion,
+	GetBranchTrampoline_Internal,
+	GetLocalTrampoline_Internal
 };
 #endif
 
@@ -184,6 +192,9 @@ void * PluginManager::QueryInterface(UInt32 id)
 		break;
 	case kInterface_Object:
 		result = (void *)&g_SKSEObjectInterface;
+		break;
+	case kInterface_Trampoline:
+		result = (void *)&g_SKSETrampolineInterface;
 		break;
 
 	default:

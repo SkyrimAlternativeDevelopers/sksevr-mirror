@@ -33,6 +33,7 @@ class BSFile;
 class BSFaceGenModelMap;
 class BSFaceGenModel;
 class NiTexture;
+class Setting;
 
 class NiAVObject;
 class NiColorA;
@@ -67,11 +68,6 @@ struct ModInfo		// referred to by game as TESFile
 		UInt32		unk10;				// 10
 		UInt16		unk14;				// 14 always initialized to 0F on SaveForm. 
 		UInt16		unk16;
-	};
-
-	enum FileFlags
-	{
-		kFileFlags_Light = (1 << 9)
 	};
 
 	UInt32								unk000;				// 000
@@ -139,9 +135,7 @@ struct ModInfo		// referred to by game as TESFile
 	// Checks if a particular formID is part of the mod
 	bool IsFormInMod(UInt32 formID) const
 	{
-		if (!IsLight() && (formID >> 24) == modIndex)
-			return true;
-		if (IsLight() && ((formID & 0x00FFF000) >> 12) == lightIndex)
+		if ((formID >> 24) == modIndex)
 			return true;
 		return false;
 	}
@@ -149,17 +143,17 @@ struct ModInfo		// referred to by game as TESFile
 	// Returns either a modIndex or a modIndex|lightIndex pair
 	UInt32 GetPartialIndex() const
 	{
-		return !IsLight() ? modIndex : (0xFE000 | lightIndex);
+		return modIndex;
 	}
 
 	// Converts the lower bits of a FormID to a full FormID depending on plugin type
 	UInt32 GetFormID(UInt32 formLower) const
 	{
-		return !IsLight() ? UInt32(modIndex) << 24 | (formLower & 0xFFFFFF) : 0xFE000000 | (UInt32(lightIndex) << 12) | (formLower & 0xFFF);
+		return UInt32(modIndex) << 24 | (formLower & 0xFFFFFF);
 	}
 
 	bool IsActive() const { return modIndex != 0xFF; }
-	bool IsLight() const { return (fileFlags & kFileFlags_Light) == kFileFlags_Light; }
+	bool IsLight() const { return false; }
 };
 
 STATIC_ASSERT(offsetof(ModInfo, formInfo) == 0x284);
@@ -935,10 +929,12 @@ public:
 	struct Preset
 	{
 		const char * presetName;
-		FacePresetData * data;
+		Setting * gameSetting;
 	};
 
 	Preset presets[kNumPresets];
+
+	static FacePresetList *	GetSingleton(void);
 };
 
 class FaceMorphList

@@ -85,6 +85,11 @@ void BranchTrampoline::Destroy()
 	}
 }
 
+bool BranchTrampoline::IsValid() const
+{
+	return m_base != nullptr;
+}
+
 void * BranchTrampoline::StartAlloc()
 {
 	ASSERT(m_base);
@@ -242,4 +247,14 @@ bool BranchTrampoline::Write5Branch_Internal(uintptr_t src, uintptr_t dst, UInt8
 	ASSERT(result);
 
 	return result;
+}
+
+BranchTrampoline& GetBranchTrampoline_Internal()
+{
+	return g_branchTrampoline;
+}
+
+BranchTrampoline& GetLocalTrampoline_Internal()
+{
+	return g_localTrampoline;
 }

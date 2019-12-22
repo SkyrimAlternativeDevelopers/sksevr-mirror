@@ -137,6 +137,20 @@ public:
 
 typedef GRect<float>	GRectF;
 
+template <class T>
+class GPoint
+{
+public:
+	enum class BoundsType { kMin, kMax };
+
+	// members
+	T	x;	// 00
+	T	y;	// ??
+};
+
+typedef GPoint<float> GPointF;
+typedef GPoint<double> GPointD;
+
 template <typename T>
 class GArray
 {

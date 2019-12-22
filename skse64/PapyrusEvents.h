@@ -92,12 +92,12 @@ public:
 		if (params)
 			reg.params = *params;
 		
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data[key].insert(reg).second)
+		if (m_data[key].insert(reg).second)
 			policy->AddRef(handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename T>
@@ -115,12 +115,12 @@ public:
 		_MESSAGE("Executed PapyrusEvents::Register - %016llX", reg.handle);
 #endif
 		
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data[key].insert(reg).second)
+		if (m_data[key].insert(reg).second)
 			policy->AddRef(reg.handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	void Unregister(K & key, UInt64 handle)
@@ -131,12 +131,12 @@ public:
 		EventRegistration<D> reg;
 		reg.handle = handle;
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data[key].erase(reg))
+		if (m_data[key].erase(reg))
 			policy->Release(handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename T>
@@ -148,12 +148,12 @@ public:
 		EventRegistration<D> reg;
 		reg.handle = policy->Create(type, (void *)classType);
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data[key].erase(reg))
+		if (m_data[key].erase(reg))
 			policy->Release(reg.handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	void UnregisterAll(UInt64 handle)
@@ -164,13 +164,13 @@ public:
 		EventRegistration<D> reg;
 		reg.handle = handle;
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		for (typename RegMap::iterator iter = SafeDataHolder::m_data.begin(); iter != SafeDataHolder::m_data.end(); ++iter)
+		for (RegMap::iterator iter = m_data.begin(); iter != m_data.end(); ++iter)
 			if (iter->second.erase(reg))
 				policy->Release(handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename T>
@@ -182,43 +182,43 @@ public:
 		EventRegistration<D> reg;
 		reg.handle = policy->Create(type, (void *)classType);
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		for (typename RegMap::iterator iter = SafeDataHolder::m_data.begin(); iter != SafeDataHolder::m_data.end(); ++iter)
+		for (RegMap::iterator iter = m_data.begin(); iter != m_data.end(); ++iter)
 			if (iter->second.erase(reg))
 				policy->Release(reg.handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename F>
 	void ForEach(K & key, F & functor)
 	{
-		SafeDataHolder::Lock();
+		Lock();
 
-		typename RegMap::iterator handles = SafeDataHolder::m_data.find(key);
+		RegMap::iterator handles = m_data.find(key);
 
-		if (handles != SafeDataHolder::m_data.end())
-			for (typename RegSet::iterator iter = handles->second.begin(); iter != handles->second.end(); ++iter)
+		if (handles != m_data.end())
+			for (RegSet::iterator iter = handles->second.begin(); iter != handles->second.end(); ++iter)
 				functor(*iter);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	void Clear(void)
 	{
-		SafeDataHolder::Lock();
-		SafeDataHolder::m_data.clear();
-		SafeDataHolder::Release();
+		Lock();
+		m_data.clear();
+		Release();
 	}
 
 	bool Save(SKSESerializationInterface * intfc, UInt32 type, UInt32 version)
 	{
 		intfc->OpenRecord(type, version);
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		for (typename RegMap::iterator iter = SafeDataHolder::m_data.begin(); iter != SafeDataHolder::m_data.end(); ++iter)
+		for (RegMap::iterator iter = m_data.begin(); iter != m_data.end(); ++iter)
 		{
 			UInt32 numRegs = iter->second.size();
 
@@ -232,13 +232,13 @@ public:
 			// Reg count
 			intfc->WriteRecordData(&numRegs, sizeof(numRegs));
 			// Regs
-			for (typename RegSet::iterator elems = iter->second.begin(); elems != iter->second.end(); ++elems)
+			for (RegSet::iterator elems = iter->second.begin(); elems != iter->second.end(); ++elems)
 				elems->Save(intfc, version);
 		}
 
 		intfc->OpenRecord('REGE', version);
 
-		SafeDataHolder::Release();
+		Release();
 
 		return true;
 	}
@@ -285,12 +285,12 @@ public:
 
 							reg.handle = newHandle;
 
-							SafeDataHolder::Lock();
+							Lock();
 
-							if (SafeDataHolder::m_data[curKey].insert(reg).second)
+							if (m_data[curKey].insert(reg).second)
 								policy->AddRef(reg.handle);
 
-							SafeDataHolder::Release();
+							Release();
 							
 						}
 						else
@@ -336,12 +336,12 @@ public:
 		if (params)
 			reg.params = *params;
 		
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data.insert(reg).second)
+		if (m_data.insert(reg).second)
 			policy->AddRef(handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename T>
@@ -355,12 +355,12 @@ public:
 		if (params)
 			reg.params = *params;
 		
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data.insert(reg).second)
+		if (m_data.insert(reg).second)
 			policy->AddRef(reg.handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	void Unregister(UInt64 handle)
@@ -371,12 +371,12 @@ public:
 		EventRegistration<D> reg;
 		reg.handle = handle;
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data.erase(reg))
+		if (m_data.erase(reg))
 			policy->Release(handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename T>
@@ -388,48 +388,48 @@ public:
 		EventRegistration<D> reg;
 		reg.handle = policy->Create(type, (void *)classType);
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		if (SafeDataHolder::m_data.erase(reg))
+		if (m_data.erase(reg))
 			policy->Release(reg.handle);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	template <typename F>
 	void ForEach(F & functor)
 	{
-		SafeDataHolder::Lock();
+		Lock();
 
-		for (typename RegSet::iterator iter = SafeDataHolder::m_data.begin(); iter != SafeDataHolder::m_data.end(); ++iter)
+		for (RegSet::iterator iter = m_data.begin(); iter != m_data.end(); ++iter)
 			functor(*iter);
 
-		SafeDataHolder::Release();
+		Release();
 	}
 
 	void Clear(void)
 	{
-		SafeDataHolder::Lock();
-		SafeDataHolder::m_data.clear();
-		SafeDataHolder::Release();
+		Lock();
+		m_data.clear();
+		Release();
 	}
 
 	bool Save(SKSESerializationInterface * intfc, UInt32 type, UInt32 version)
 	{
 		intfc->OpenRecord(type, version);
 
-		SafeDataHolder::Lock();
+		Lock();
 
-		UInt32 numRegs = SafeDataHolder::m_data.size();
+		UInt32 numRegs = m_data.size();
 
 		// Reg count
 		intfc->WriteRecordData(&numRegs, sizeof(numRegs));
 			
 		// Regs
-		for (typename RegSet::iterator iter = SafeDataHolder::m_data.begin(); iter != SafeDataHolder::m_data.end(); ++iter)
+		for (RegSet::iterator iter = m_data.begin(); iter != m_data.end(); ++iter)
 			iter->Save(intfc, version);
 
-		SafeDataHolder::Release();
+		Release();
 
 		return true;
 	}
@@ -460,12 +460,12 @@ public:
 
 				reg.handle = newHandle;
 
-				SafeDataHolder::Lock();
+				Lock();
 
-				if (SafeDataHolder::m_data.insert(reg).second)
+				if (m_data.insert(reg).second)
 					policy->AddRef(reg.handle);
 
-				SafeDataHolder::Release();
+				Release();
 				
 			}
 			else

@@ -89,17 +89,22 @@ public:
 //	void	** _vtbl;	// 00
 };
 
-// 0C + T_numArgs * 0x10
+// 08 + T_numArgs * 0x10
 template <UInt32 T_numArgs>
 class FxResponseArgs : public FxResponseArgsBase
 {
 public:
-	FxResponseArgs();
-	virtual ~FxResponseArgs();
+	FxResponseArgs() : curArg(T_numArgs + 1) { };
+	virtual ~FxResponseArgs() { };
 
-	UInt32		align04;				// 04 - needed because GFxValue contains a double
-	GFxValue	args[T_numArgs + 1];	// 08
-	UInt32		curArg;					// 28 - offsets assume one argument
+	virtual UInt32	GetValues(GFxValue ** params)
+	{
+		*params = &args[0];
+		return curArg;
+	}
+
+	GFxValue	args[T_numArgs + 1];	// 08 - first entry must be empty for some reason
+	UInt32		curArg;					// 20 - offsets assume one argument
 };
 
 // ?

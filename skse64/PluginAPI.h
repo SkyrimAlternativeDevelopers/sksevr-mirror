@@ -9,6 +9,7 @@ class InventoryEntryData;
 class SKSEDelayFunctorManager;
 class SKSEObjectRegistry;
 class SKSEPersistentObjectStorage;
+class BranchTrampoline;
 
 enum
 {
@@ -24,6 +25,7 @@ enum
 	kInterface_Task,
 	kInterface_Messaging,
 	kInterface_Object,
+	kInterface_Trampoline,
 	kInterface_Max,
 };
 
@@ -229,6 +231,19 @@ struct SKSEObjectInterface
 	SKSEDelayFunctorManager & (* GetDelayFunctorManager)();
 	SKSEObjectRegistry & (* GetObjectRegistry)();
 	SKSEPersistentObjectStorage & (* GetPersistentObjectStorage)();
+};
+
+struct SKSETrampolineInterface
+{
+	enum
+	{
+		kInterfaceVersion = 1
+	};
+
+	UInt32	interfaceVersion;
+
+	BranchTrampoline & (*GetBranchTrampoline)();
+	BranchTrampoline & (*GetLocalTrampoline)();
 };
 
 struct PluginInfo

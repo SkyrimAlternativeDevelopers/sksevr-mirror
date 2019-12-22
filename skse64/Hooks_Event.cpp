@@ -9,6 +9,11 @@
 
 RelocAddr <uintptr_t> PlayerControls_ctor_Call(0x005B42E0 + 0xEF7);
 
+RelocPtr<UInt32> g_textureResX(0x03186C34);
+RelocPtr<UInt32> g_textureResY(0x03186C38);
+RelocPtr<UInt32> g_textureRes2X(0x03186C3C);
+RelocPtr<UInt32> g_textureRes2Y(0x03186C40);
+
 PlayerControls * PlayerControls::ctor_Hook(void)
 {
 	PlayerControls	* result = CALL_MEMBER_FN(this, ctor)();
@@ -34,6 +39,11 @@ PlayerControls * PlayerControls::ctor_Hook(void)
 	}
 
 	PluginManager::Dispatch_Message(0, SKSEMessagingInterface::kMessage_InputLoaded, NULL, 0, NULL);
+
+	*g_textureResX = 256;
+	*g_textureResY = 256;
+	*g_textureRes2X = 256;
+	*g_textureRes2Y = 256;
 
 	return result;
 }

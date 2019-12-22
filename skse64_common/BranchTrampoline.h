@@ -4,26 +4,27 @@ class BranchTrampoline
 {
 public:
 	BranchTrampoline();
-	~BranchTrampoline();
+	virtual ~BranchTrampoline();
 
-	bool Create(size_t len, void * module = NULL);
+	virtual bool Create(size_t len, void * module = NULL);
 	void Destroy();
 
 	// allocate unsized 
-	void * StartAlloc();
-	void EndAlloc(const void * end);
+	virtual bool IsValid() const;
+	virtual void * StartAlloc();
+	virtual void EndAlloc(const void * end);
 
-	void * Allocate(size_t size = sizeof(void *));
+	virtual void * Allocate(size_t size = sizeof(void *));
 
-	size_t Remain()	{ return m_len - m_allocated; }
+	virtual size_t Remain()	{ return m_len - m_allocated; }
 
 	// takes 6 bytes of space at src, 8 bytes in trampoline
-	bool Write6Branch(uintptr_t src, uintptr_t dst);
-	bool Write6Call(uintptr_t src, uintptr_t dst);
+	virtual bool Write6Branch(uintptr_t src, uintptr_t dst);
+	virtual bool Write6Call(uintptr_t src, uintptr_t dst);
 
 	// takes 5 bytes of space at src, 14 bytes in trampoline
-	bool Write5Branch(uintptr_t src, uintptr_t dst);
-	bool Write5Call(uintptr_t src, uintptr_t dst);
+	virtual bool Write5Branch(uintptr_t src, uintptr_t dst);
+	virtual bool Write5Call(uintptr_t src, uintptr_t dst);
 
 private:
 	// takes 6 bytes of space at src, 8 bytes in trampoline
@@ -41,3 +42,6 @@ private:
 
 extern BranchTrampoline g_branchTrampoline;
 extern BranchTrampoline g_localTrampoline;
+
+BranchTrampoline& GetBranchTrampoline_Internal();
+BranchTrampoline& GetLocalTrampoline_Internal();
