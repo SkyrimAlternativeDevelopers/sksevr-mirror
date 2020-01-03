@@ -506,7 +506,7 @@ namespace scaleformExtend
 							, m_bExtra(bExtra)
 						{ };
 
-						virtual BSContainer::ForEachResult Visit(ActiveEffect* pEffect)
+						virtual BSContainer::ForEachResult Visit(ActiveEffect* pEffect) override
 						{
 							GFxValue effect;
 							m_movieView->CreateObject(&effect);

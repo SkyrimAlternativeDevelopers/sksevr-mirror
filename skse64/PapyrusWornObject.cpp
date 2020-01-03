@@ -58,7 +58,7 @@ namespace referenceUtils
 					, m_extraData(extraData)
 				{ };
 
-				virtual BSContainer::ForEachResult Visit(ActiveEffect* effect)
+				virtual BSContainer::ForEachResult Visit(ActiveEffect* effect) override
 				{
 					if (effect->sourceItem == m_baseForm) { // Check the item
 						EnchantmentItem * enchantment = NULL;

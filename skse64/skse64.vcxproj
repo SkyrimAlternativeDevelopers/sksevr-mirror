@@ -14,14 +14,10 @@
     <ProjectGuid>{639411C0-FC23-4819-A0C5-429A4E5D8A51}</ProjectGuid>
     <RootNamespace>skse64</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <SccProjectName>
-    </SccProjectName>
-    <SccAuxPath>
-    </SccAuxPath>
-    <SccLocalPath>
-    </SccLocalPath>
-    <SccProvider>
-    </SccProvider>
+    <SccProjectName>SAK</SccProjectName>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccProvider>SAK</SccProvider>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -31,7 +27,7 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -140,7 +136,9 @@
     <ClCompile Include="Hooks_Scaleform.cpp" />
     <ClCompile Include="Hooks_Threads.cpp" />
     <ClCompile Include="Hooks_UI.cpp" />
+    <ClCompile Include="Hooks_VR.cpp" />
     <ClCompile Include="InputMap.cpp" />
+    <ClCompile Include="InternalVR.cpp" />
     <ClCompile Include="InternalSerialization.cpp" />
     <ClCompile Include="InternalTasks.cpp" />
     <ClCompile Include="NiAdditionalGeometryData.cpp" />
@@ -284,7 +282,9 @@
     <ClInclude Include="Hooks_Scaleform.h" />
     <ClInclude Include="Hooks_Threads.h" />
     <ClInclude Include="Hooks_UI.h" />
+    <ClInclude Include="Hooks_VR.h" />
     <ClInclude Include="InputMap.h" />
+    <ClInclude Include="InternalVR.h" />
     <ClInclude Include="InternalSerialization.h" />
     <ClInclude Include="InternalTasks.h" />
     <ClInclude Include="NiAdditionalGeometryData.h" />
@@ -304,6 +304,7 @@
     <ClInclude Include="NiTypes.h" />
     <ClInclude Include="ObScript.h" />
     <ClInclude Include="openvr_1_0_12.h" />
+    <ClInclude Include="openvr_1_9_16.h" />
     <ClInclude Include="PapyrusActiveMagicEffect.h" />
     <ClInclude Include="PapyrusActor.h" />
     <ClInclude Include="PapyrusActorBase.h" />

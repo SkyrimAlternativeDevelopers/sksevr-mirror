@@ -242,8 +242,8 @@ struct SKSETrampolineInterface
 
 	UInt32	interfaceVersion;
 
-	BranchTrampoline & (*GetBranchTrampoline)();
-	BranchTrampoline & (*GetLocalTrampoline)();
+	void* (*AllocateFromBranchPool)(PluginHandle plugin, size_t size);
+	void* (*AllocateFromLocalPool)(PluginHandle plugin, size_t size);
 };
 
 struct PluginInfo

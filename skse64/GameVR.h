@@ -37,18 +37,18 @@ public:
 	};
 
 	virtual void Shutdown() = 0;
-	virtual vr::IVRCompositor* GetCompositor() = 0;
+	virtual vr_1_0_12::IVRCompositor* GetCompositor() = 0;
 	virtual void Unk_03() = 0;
-	virtual void Submit(vr::EVREye eye, const vr::Texture_t* texture) = 0;
+	virtual void Submit(vr_1_0_12::EVREye eye, const vr_1_0_12::Texture_t* texture) = 0;
 	virtual void SetStanding() = 0; // Sets tracking space to standing
 	virtual void SetSeated() = 0; // Sets tracking space to seated
 	virtual void GetProjectionMatrix(void*) = 0;
 	virtual void Unk_08() = 0;
 	virtual void Unk_09() = 0;
 	virtual void Unk_0A() = 0;
-	virtual void Unk_0B() = 0;
+	virtual void PollNextEvent() = 0;
 	virtual void Unk_0C() = 0;
-	virtual vr::TrackedDeviceIndex_t GetTrackedDeviceHand(BSControllerHand hand) = 0;
+	virtual vr_1_0_12::TrackedDeviceIndex_t GetTrackedDeviceHand(BSControllerHand hand) = 0;
 	virtual void TriggerHapticPulse(BSControllerHand hand, float duration) = 0; // Duration is multiplied by 0x1417E6E50 which is default 3999.0
 	virtual void Unk_0F() = 0;
 	virtual void Unk_10() { };
@@ -74,19 +74,19 @@ STATIC_ASSERT(sizeof(BSVRInterface) == 0x110);
 class BSOpenVR : public BSVRInterface
 {
 public:
-	UInt64					unk110;				// 110 - Compositor Initialized?
-	void*					unk118;				// 118
-	UInt64					unk120;				// 120
-	float					unk128[(0x190 - 0x128) >> 2];	// 128
-	vr::COpenVRContext		vrContext;			// 190
-	vr::VROverlayHandle_t	inputOverlay;		// 1F8 - Overlay handle for Input
-	UInt64					unk200;				// 200
-	vr::IVRSystem*			vrSystem;			// 208 - vrclient_x64 - IVRSystem_019
-	void*					unk210;				// 210
-	UInt64					unk218;				// 218
-	void*					unk220;				// 220
-	UInt64					unk228;				// 228
-	NiTexturePtr			unk230;				// 230 "SIMPLE_NORMAL_MAP" NiSourceTexture
+	UInt64							unk110;				// 110 - Compositor Initialized?
+	void*							unk118;				// 118
+	UInt64							unk120;				// 120
+	float							unk128[(0x190 - 0x128) >> 2];	// 128
+	vr_1_0_12::COpenVRContext		vrContext;			// 190
+	vr_1_0_12::VROverlayHandle_t	inputOverlay;		// 1F8 - Overlay handle for Input
+	UInt64							unk200;				// 200
+	vr_1_0_12::IVRSystem*			vrSystem;			// 208 - vrclient_x64 - IVRSystem_019
+	void*							unk210;				// 210
+	UInt64							unk218;				// 218
+	void*							unk220;				// 220
+	UInt64							unk228;				// 228
+	NiTexturePtr					unk230;				// 230 "SIMPLE_NORMAL_MAP" NiSourceTexture
 
 	// 40
 	struct Data238
@@ -106,6 +106,8 @@ public:
 	NiPointer<NiNode>		controller[2];		// 388 - Left, Right
 	UInt64					unk398;				// 398
 	float					unk3A0[(0x408 - 0x3A0) >> 2];
+
+	DEFINE_MEMBER_FN_0(PollNextEvent_Internal, void, 0x00C53E30);
 };
 STATIC_ASSERT(offsetof(BSOpenVR, controller) == 0x388);
 STATIC_ASSERT(sizeof(BSOpenVR) == 0x408);

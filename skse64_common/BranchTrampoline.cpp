@@ -85,9 +85,13 @@ void BranchTrampoline::Destroy()
 	}
 }
 
-bool BranchTrampoline::IsValid() const
+void BranchTrampoline::SetBase(size_t len, void * base)
 {
-	return m_base != nullptr;
+	ASSERT(!m_base);
+	m_base = base;
+	m_len = len;
+	m_allocated = 0;
+	m_curAlloc = nullptr;
 }
 
 void * BranchTrampoline::StartAlloc()
@@ -95,6 +99,7 @@ void * BranchTrampoline::StartAlloc()
 	ASSERT(m_base);
 	ASSERT(!m_curAlloc);
 
+	m_lock.lock();
 	m_curAlloc = ((UInt8 *)m_base) + m_allocated;
 
 	return m_curAlloc;
@@ -110,6 +115,7 @@ void BranchTrampoline::EndAlloc(const void * end)
 
 	m_allocated += len;
 	m_curAlloc = nullptr;
+	m_lock.unlock();
 }
 
 void * BranchTrampoline::Allocate(size_t size)
@@ -117,9 +123,9 @@ void * BranchTrampoline::Allocate(size_t size)
 	ASSERT(m_base);
 
 	void * result = nullptr;
+	std::lock_guard<decltype(m_lock)> locker(m_lock);
 
-	if(size <= Remain())
-	{
+	if (size <= Remain()) {
 		result = ((UInt8 *)m_base) + m_allocated;
 		m_allocated += size;
 	}
@@ -247,14 +253,4 @@ bool BranchTrampoline::Write5Branch_Internal(uintptr_t src, uintptr_t dst, UInt8
 	ASSERT(result);
 
 	return result;
-}
-
-BranchTrampoline& GetBranchTrampoline_Internal()
-{
-	return g_branchTrampoline;
-}
-
-BranchTrampoline& GetLocalTrampoline_Internal()
-{
-	return g_localTrampoline;
 }

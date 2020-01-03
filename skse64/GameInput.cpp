@@ -255,4 +255,46 @@ MenuControls * MenuControls::GetSingleton(void)
 }
 
  RelocPtr<bool> g_isUsingMotionControllers(0x01E717A8);
- RelocPtr<bool> g_leftHandedMode(0x01E717A8);
+ RelocPtr<bool> g_leftHandedMode(0x01E71778);
+
+#include "skse64/GameRTTI.h"
+
+ void InputEvent::LogEvent()
+ {
+	switch (eventType)
+	{
+	case InputEvent::kEventType_MouseMove:
+	{
+		MouseMoveEvent * t = DYNAMIC_CAST(this, InputEvent, MouseMoveEvent);
+		break;
+	}
+	case InputEvent::kEventType_Thumbstick:
+	{
+		ThumbstickEvent * t = DYNAMIC_CAST(this, InputEvent, ThumbstickEvent);
+		_MESSAGE("Stick Control: %s X: %f Y: %f", t->GetControlID() ? t->GetControlID()->c_str() : "", t->x, t->y);
+		break;
+	}
+	case InputEvent::kEventType_DeviceConnect:
+	{
+		break;
+	}
+	case InputEvent::kEventType_Button:
+	{
+		ButtonEvent * t = DYNAMIC_CAST(this, InputEvent, ButtonEvent);
+		_MESSAGE("Button Control: %s State: %f Timer: %f Mask: %08X Flags: %08X", t->GetControlID() ? t->GetControlID()->c_str() : "", t->isDown, t->timer, t->keyMask, t->flags);
+		break;
+	}
+	case InputEvent::kEventType_VrWandTouchpadPositionEvent:
+	{
+		VrWandTouchpadPositionEvent * t = DYNAMIC_CAST(this, InputEvent, VrWandTouchpadPositionEvent);
+		_MESSAGE("Touchpad Pos Control: %s X: %f Y: %f", t->GetControlID() ? t->GetControlID()->c_str() : "", t->x, t->y);
+		break;
+	}
+	case InputEvent::kEventType_VrWandTouchpadSwipeEvent:
+	{
+		VrWandTouchpadSwipeEvent * t = DYNAMIC_CAST(this, InputEvent, VrWandTouchpadSwipeEvent);
+		_MESSAGE("Touchpad Swipe Control: %s X: %f Y: %f", t->GetControlID() ? t->GetControlID()->c_str() : "", t->x, t->y);
+		break;
+	}
+	}
+ }

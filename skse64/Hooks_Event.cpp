@@ -6,13 +6,9 @@
 #include "skse64/PapyrusEvents.h"
 #include "skse64/PluginManager.h"
 #include "skse64_common/BranchTrampoline.h"
+#include "InternalVR.h"
 
 RelocAddr <uintptr_t> PlayerControls_ctor_Call(0x005B42E0 + 0xEF7);
-
-RelocPtr<UInt32> g_textureResX(0x03186C34);
-RelocPtr<UInt32> g_textureResY(0x03186C38);
-RelocPtr<UInt32> g_textureRes2X(0x03186C3C);
-RelocPtr<UInt32> g_textureRes2Y(0x03186C40);
 
 PlayerControls * PlayerControls::ctor_Hook(void)
 {
@@ -38,12 +34,9 @@ PlayerControls * PlayerControls::ctor_Hook(void)
 		_MESSAGE("Failed to register SKSE inputEventHandler");
 	}
 
-	PluginManager::Dispatch_Message(0, SKSEMessagingInterface::kMessage_InputLoaded, NULL, 0, NULL);
+	RegisterActionBindings();
 
-	*g_textureResX = 256;
-	*g_textureResY = 256;
-	*g_textureRes2X = 256;
-	*g_textureRes2Y = 256;
+	PluginManager::Dispatch_Message(0, SKSEMessagingInterface::kMessage_InputLoaded, NULL, 0, NULL);
 
 	return result;
 }

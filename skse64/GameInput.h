@@ -6,6 +6,8 @@
 #include "InputMap.h"
 #include "NiTypes.h"
 
+#include "openvr_1_0_12.h"
+
 class PlayerControls;
 class BGSEncounterZone;
 class MenuEventHandler;
@@ -143,33 +145,8 @@ public:
 class BSOpenVRControllerDevice : public BSTrackedControllerDevice
 {
 public:
-	struct VRControllerAxis_t
-	{
-		float x; // Ranges from -1.0 to 1.0 for joysticks and track pads. Ranges from 0.0 to 1.0 for triggers were 0 is fully released.
-		float y; // Ranges from -1.0 to 1.0 for joysticks and track pads. Is always 0.0 for triggers.
-	};
-
-
-	/** the number of axes in the controller state */
-	static const uint32_t k_unControllerStateAxisCount = 5;
-
-	/** Holds all the state of a controller at one moment in time. */
-	struct VRControllerState001_t
-	{
-		// If packet num matches that on your prior call, then the controller state hasn't been changed since 
-		// your last call and there is no need to process it
-		uint32_t unPacketNum;
-
-		// bit flags for each of the buttons. Use ButtonMaskFromId to turn an ID into a mask
-		uint64_t ulButtonPressed;
-		uint64_t ulButtonTouched;
-
-		// Axis data for the controller's analog inputs
-		VRControllerAxis_t rAxis[k_unControllerStateAxisCount];
-	};
-
-	VRControllerState001_t	prevState;	// 80
-	VRControllerState001_t	state;		// C0
+	vr_1_0_12::VRControllerState001_t	prevState;	// 80
+	vr_1_0_12::VRControllerState001_t	state;		// C0
 	UInt64	unk100;
 	UInt64	unk108;
 	UInt64	unk110;
@@ -208,7 +185,7 @@ public:
 		kEventType_DeviceConnect,
 		kEventType_Kinect,
 		kEventType_VrWandTouchpadPositionEvent,
-		kEventType_VrWantTouchpadSwipeEvent
+		kEventType_VrWandTouchpadSwipeEvent
 	};
 
 	virtual					~InputEvent();
@@ -219,6 +196,8 @@ public:
 	UInt32			deviceType;	// 08
 	UInt32			eventType;	// 0C
 	InputEvent		* next;		// 10
+
+	void LogEvent();
 };
 
 class IDEvent
@@ -282,9 +261,22 @@ class VrWandPositionEvent : public IDEvent, public InputEvent
 public:
 	SInt64		unk20;	// 20
 	SInt64		unk28;	// 28
-	UInt64		unk30;	// 30
-	float		x;		// 38
-	float		y;		// 3C
+	float		x;		// 30
+	float		y;		// 34
+	UInt32		unk38;	// 38
+	UInt32		unk3C;	// 3C
+};
+
+class VrWandTouchpadPositionEvent : public VrWandPositionEvent
+{
+public:
+
+};
+
+class VrWandTouchpadSwipeEvent : public VrWandPositionEvent
+{
+public:
+
 };
 
 // E8 
