@@ -1,8 +1,14 @@
 #include "Hooks_Scaleform.h"
 #include "Hooks_Gameplay.h"
+#include "Hooks_UI.h"
+#include "Hooks_Threads.h"
+
+#include "common/IMemPool.h"
 #include "skse64_common/SafeWrite.h"
 #include "skse64_common/Utilities.h"
 #include "skse64_common/BranchTrampoline.h"
+#include "skse64_common/skse_version.h"
+
 #include "ScaleformCallbacks.h"
 #include "ScaleformMovie.h"
 #include "ScaleformAPI.h"
@@ -12,7 +18,7 @@
 #include "GameSettings.h"
 #include "GameMenus.h"
 #include "PluginManager.h"
-#include "skse64_common/skse_version.h"
+
 #include "GameForms.h"
 #include "GameObjects.h"
 #include "GameReferences.h"
@@ -20,17 +26,20 @@
 #include "GameData.h"
 #include "GameExtraData.h"
 #include "GameVR.h"
-#include <new>
-#include <list>
+
 #include "PapyrusEvents.h"
 #include "PapyrusVM.h"
 #include "ScaleformState.h"
 #include "GlobalLocks.h"
 #include "GameMenus.h"
-#include "common/IMemPool.h"
 #include "HashUtil.h"
 #include "Translation.h"
 #include "xbyak/xbyak.h"
+
+#include <new>
+#include <list>
+#include <thread>
+#include <future>
 
 //// plugin API
 
@@ -981,6 +990,99 @@ public:
 	}
 };
 
+class KeyboardCallbackDelegate : public UIDelegate_v1
+{
+public:
+	KeyboardCallbackDelegate(GFxValue thisPtr, GFxValue value, const std::string& text) : m_this(thisPtr), m_value(value), m_text(text) { }
+
+	virtual void Run() override
+	{
+		GFxValue vals[3];
+		vals[0] = m_this;
+		auto objectInterface = m_value.objectInterface;
+		if (objectInterface) {
+			auto movieRoot = objectInterface->root;
+			if (movieRoot) {
+				movieRoot->CreateString(&vals[1], m_text.c_str());
+			}
+		}
+		vals[2].SetNumber(0);
+		m_value.Invoke("call", nullptr, vals, 3);
+	}
+	virtual void Dispose() override
+	{
+		delete this;
+	}
+
+protected:
+	GFxValue	m_this;
+	GFxValue	m_value;
+	std::string	m_text;
+};
+
+class SKSEScaleform_ShowVirtualKeyboard : public GFxFunctionHandler
+{
+public:
+	virtual void	Invoke(Args * args)
+	{
+		if (!g_loadGameLock.TryEnter())
+			return;
+
+		ASSERT(args->numArgs >= 6);
+		ASSERT(args->args[0].GetType() == GFxValue::kType_String); // Key
+		ASSERT(args->args[1].GetType() == GFxValue::kType_String); // Title
+		ASSERT(args->args[2].GetType() == GFxValue::kType_String); // Desc
+		ASSERT(args->args[3].GetType() == GFxValue::kType_String); // Text
+		ASSERT(args->args[4].GetType() == GFxValue::kType_Object || args->args[4].GetType() == GFxValue::kType_DisplayObject); // This
+		ASSERT(args->args[5].GetType() == GFxValue::kType_Object); // Function
+
+		namespace vr = vr_1_0_12;
+
+		vr::VROverlayHandle_t overlayHandle;
+		vr::EVROverlayError err = (*g_openVR)->vrContext.m_pVROverlay->CreateOverlay(args->args[0].GetString(), args->args[1].GetString(), &overlayHandle);
+		if (err == vr::EVROverlayError::VROverlayError_None)
+		{
+			err = (*g_openVR)->vrContext.m_pVROverlay->ShowKeyboardForOverlay(overlayHandle, vr::k_EGamepadTextInputModeNormal, vr::k_EGamepadTextInputLineModeSingleLine, args->args[2].GetString(), 255, args->args[3].GetString(), false, 0);
+			if (err == vr::EVROverlayError::VROverlayError_None)
+			{
+				std::async(std::launch::async, [](vr::VROverlayHandle_t handle, GFxValue thisValue, GFxValue value)
+				{
+					vr::VREvent_t eventData;
+					while (true)
+					{
+						if ((*g_openVR)->vrContext.m_pVROverlay->PollNextOverlayEvent(handle, &eventData, sizeof(vr::VREvent_t)))
+						{
+							if (eventData.eventType == vr::VREvent_KeyboardClosed || eventData.eventType == vr::VREvent_KeyboardDone)
+							{
+								char buffer[0x80];
+								(*g_openVR)->vrContext.m_pVROverlay->GetKeyboardText(buffer, 0x80);
+
+								TaskInterface::AddUITask(new KeyboardCallbackDelegate(thisValue, value, buffer));
+
+								(*g_openVR)->vrContext.m_pVROverlay->DestroyOverlay(handle);
+								break;
+							}
+						}
+					}
+				}, overlayHandle, args->args[4], args->args[5]);
+			}
+		}
+		
+		if (err != vr::EVROverlayError::VROverlayError_None)
+		{
+			GFxValue vals[3];
+			vals[0] = args->args[4];
+			vals[1].SetString(args->args[3].GetString());
+			vals[2].SetNumber(static_cast<double>(err));
+			args->args[5].Invoke("call", nullptr, vals, 3);
+		}
+
+		args->result->SetBool(err == vr::EVROverlayError::VROverlayError_None);
+
+		g_loadGameLock.Leave();
+	}
+};
+
 /*
 class GetScriptVariableFunctor : public IForEachScriptObjectFunctor
 {
@@ -1639,6 +1741,7 @@ void InstallHooks(GFxMovieView * view)
 	RegisterFunction <SKSEScaleform_IsVR>(&skse, view, "IsVR");
 	RegisterFunction <SKSEScaleform_IsUsingMotionControllers>(&skse, view, "IsUsingMotionControllers");
 	RegisterFunction <SKSEScaleform_IsLeftHanded>(&skse, view, "IsLeftHanded");
+	RegisterFunction <SKSEScaleform_ShowVirtualKeyboard>(&skse, view, "ShowVirtualKeyboard");
 
 	// version
 	GFxValue	version;

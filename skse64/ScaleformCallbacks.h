@@ -31,13 +31,13 @@ public:
 	class Args
 	{
 	public:
-		GFxValue		* result;	// 00
-		GFxMovieView	* movie;	// 04
-		GFxValue		* thisObj;	// 08
-		GFxValue		* unk0C;	// 0C
-		GFxValue		* args;		// 10
-		UInt32			numArgs;	// 14
-		void			* refCon;	// 18
+		GFxValue		* result;			// 00
+		GFxMovieView	* movie;			// 04
+		GFxValue		* thisObj;			// 08
+		GFxValue		* pArgsWithThisRef;	// 0C
+		GFxValue		* args;				// 10
+		UInt32			numArgs;			// 14
+		void			* refCon;			// 18
 	};
 
 	virtual void	Invoke(Args * args) = 0;

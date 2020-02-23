@@ -4,6 +4,8 @@
 #include "GameVR.h"
 #include "InternalVR.h"
 
+namespace vr = vr_dst;
+
 // ??_7BSOpenVR@@6B@
 RelocAddr<uintptr_t> BSOpenVR_Vtable(0x017E6AA0);
 
@@ -11,14 +13,15 @@ static vr::Exports::VR_GetGenericInterface VR_GetGenericInterface_RealFunc;
 
 static uint32_t packetNum = 0;
 
-class IVRSystemHooked : public IVRSystemProxy
+class IVRSystemHooked : protected IVRSystemProxy
 {
 public:
-	IVRSystemHooked(vr_dst::IVRSystem* targetSystem) : IVRSystemProxy(targetSystem) { }
+	explicit IVRSystemHooked(vr_dst::IVRSystem* targetSystem = nullptr) : IVRSystemProxy(targetSystem) { }
 
 	virtual bool GetControllerState(vr_src::TrackedDeviceIndex_t unControllerDeviceIndex, vr_src::VRControllerState_t *pControllerState, uint32_t unControllerStateSize) override
 	{
 #if 0
+		// Testing bone input
 		vr::EVRInputError err;
 
 		uint32_t leftBoneCount = 0, rightBoneCount = 0;
@@ -35,9 +38,8 @@ public:
 #endif
 
 		// We need to emulate controller state calls using Action bindings instead
-		if (!vr_context.VRInput()->IsUsingLegacyInput())
+		if (vr_actionHandles.m_enabled)
 		{
-			
 			vr_src::TrackedDeviceIndex_t leftDevice = GetTrackedDeviceIndexForControllerRole(vr_src::ETrackedControllerRole::TrackedControllerRole_LeftHand);
 			vr_src::TrackedDeviceIndex_t rightDevice = GetTrackedDeviceIndexForControllerRole(vr_src::ETrackedControllerRole::TrackedControllerRole_RightHand);
 
@@ -53,6 +55,7 @@ public:
 
 			if (role)
 			{
+				// Zero the incoming state incase this didn't already happen
 				memset(pControllerState, 0, unControllerStateSize);
 
 				for (auto& button : role->m_pressedMap)
@@ -113,6 +116,7 @@ public:
 					}
 				}
 
+				// Not sure this even does anything useful in Skyrim but we'll at least make it unique
 				pControllerState->unPacketNum = ++packetNum;
 				return true;
 			}
@@ -130,27 +134,14 @@ public:
 	{
 		uint32_t ret = __super::GetStringTrackedDeviceProperty(unDeviceIndex, prop, pchValue, unBufferSize, pError);
 
-		if (prop == vr_src::ETrackedDeviceProperty::Prop_TrackingSystemName_String && !vr_context.VRInput()->IsUsingLegacyInput())
+		// Faking the TrackingSystemName is how simulate_controller_type works
+		if (prop == vr_src::ETrackedDeviceProperty::Prop_TrackingSystemName_String && vr_actionHandles.m_enabled)
 		{
-			vr_src::TrackedDeviceIndex_t leftDevice = GetTrackedDeviceIndexForControllerRole(vr_src::ETrackedControllerRole::TrackedControllerRole_LeftHand);
-			if (leftDevice != vr::k_unTrackedDeviceIndexInvalid)
-			{
-				char buff[0x80];
-				uint32_t ret = __super::GetStringTrackedDeviceProperty(unDeviceIndex, vr_src::Prop_RenderModelName_String, buff, 0x80, pError);
-				if (_stricmp(buff, "{indexcontroller}valve_controller_knu_1_0_left") == 0) {
-					strcpy_s(pchValue, unBufferSize, "oculus");
-					return 6;
-				}
-			}
-			vr_src::TrackedDeviceIndex_t rightDevice = GetTrackedDeviceIndexForControllerRole(vr_src::ETrackedControllerRole::TrackedControllerRole_RightHand);
-			if (rightDevice != vr::k_unTrackedDeviceIndexInvalid)
-			{
-				char buff[0x80];
-				uint32_t ret = __super::GetStringTrackedDeviceProperty(unDeviceIndex, vr_src::Prop_RenderModelName_String, buff, 0x80, pError);
-				if (_stricmp(buff, "{indexcontroller}valve_controller_knu_1_0_right") == 0) {
-					strcpy_s(pchValue, unBufferSize, "oculus");
-					return 6;
-				}
+			char buff[0x80];
+			uint32_t typeSize = __super::GetStringTrackedDeviceProperty(unDeviceIndex, vr_src::Prop_ControllerType_String, buff, 0x80, pError);
+			if (typeSize > 0 && _stricmp(buff, "knuckles") == 0) {
+				strcpy_s(pchValue, unBufferSize, "oculus");
+				return 6;
 			}
 		}
 
@@ -161,45 +152,112 @@ public:
 	{
 		int32_t ret = __super::GetInt32TrackedDeviceProperty(unDeviceIndex, prop, pError);
 
-		// Is this wrong? It reports Axis3 as None when it's actually a Joystick?
-		if (prop == vr_src::ETrackedDeviceProperty::Prop_Axis3Type_Int32 && !vr_context.VRInput()->IsUsingLegacyInput())
+		// Is this wrong? It reports Axis3 as None when it's actually a Joystick? Let's correct it for Skyrim so sticks work and Trackpad isn't clobbered
+		if (prop == vr_src::ETrackedDeviceProperty::Prop_Axis3Type_Int32 && vr_actionHandles.m_enabled)
 		{
-			vr_src::TrackedDeviceIndex_t leftDevice = GetTrackedDeviceIndexForControllerRole(vr_src::ETrackedControllerRole::TrackedControllerRole_LeftHand);
-			if (leftDevice == unDeviceIndex)
-			{
-				char buff[0x80];
-				uint32_t ret = __super::GetStringTrackedDeviceProperty(unDeviceIndex, vr_src::Prop_RenderModelName_String, buff, 0x80, pError);
-				if (_stricmp(buff, "{indexcontroller}valve_controller_knu_1_0_left") == 0) {
-					return vr_src::k_eControllerAxis_Joystick;
-				}
-			}
-			vr_src::TrackedDeviceIndex_t rightDevice = GetTrackedDeviceIndexForControllerRole(vr_src::ETrackedControllerRole::TrackedControllerRole_RightHand);
-			if (rightDevice == unDeviceIndex)
-			{
-				char buff[0x80];
-				uint32_t ret = __super::GetStringTrackedDeviceProperty(unDeviceIndex, vr_src::Prop_RenderModelName_String, buff, 0x80, pError);
-				if (_stricmp(buff, "{indexcontroller}valve_controller_knu_1_0_right") == 0) {
-					return vr_src::k_eControllerAxis_Joystick;
-				}
+			char buff[0x80];
+			uint32_t typeSize = __super::GetStringTrackedDeviceProperty(unDeviceIndex, vr_src::Prop_ControllerType_String, buff, 0x80, pError);
+			if (typeSize > 0 && _stricmp(buff, "knuckles") == 0) {
+				return vr_src::k_eControllerAxis_Joystick;
 			}
 		}
 
 		return ret;
 	}
+
+	// Since this is a proxy to a newer device, we need to query the new struct, then copy the old data
+	virtual bool PollNextEvent(vr_src::VREvent_t *pEvent, uint32_t uncbVREvent) override
+	{
+		vr_dst::VREvent_t realEvent;
+		bool result = m_system->PollNextEvent(&realEvent, sizeof(vr_dst::VREvent_t));
+		if (result)
+		{
+			switch (realEvent.eventType)
+			{
+			case vr_dst::VREvent_TrackedDeviceActivated:
+			case vr_dst::VREvent_TrackedDeviceDeactivated:
+			case vr_dst::VREvent_Input_TrackerActivated:
+				InternalVR::UpdateTrackedDevices();
+				break;
+			case vr_dst::VREvent_Input_BindingLoadSuccessful:
+			case vr_dst::VREvent_Input_ActionManifestReloaded:
+			case vr_dst::VREvent_Input_BindingsUpdated:
+				InternalVR::LoadActionHandles(true);
+				break;
+			default:
+				break;
+			}
+		}
+		memcpy(pEvent, &realEvent, uncbVREvent);
+		return result;
+	}
+
+	void SetTargetSystem(vr_dst::IVRSystem* system)
+	{
+		m_system = system;
+	}
+};
+
+class IVRCompositorHooked : protected IVRCompositorProxy
+{
+public:
+	explicit IVRCompositorHooked(vr_dst::IVRCompositor* targetCompositor = nullptr) : IVRCompositorProxy(targetCompositor) { }
+
+	virtual vr_src::EVRCompositorError WaitGetPoses(VR_ARRAY_COUNT(unRenderPoseArrayCount) vr_src::TrackedDevicePose_t* pRenderPoseArray, uint32_t unRenderPoseArrayCount, VR_ARRAY_COUNT(unGamePoseArrayCount) vr_src::TrackedDevicePose_t* pGamePoseArray, uint32_t unGamePoseArrayCount) override
+	{
+		auto result = __super::WaitGetPoses(pRenderPoseArray, unRenderPoseArrayCount, pGamePoseArray, unGamePoseArrayCount);
+
+		// Traverse all the connected trackers and acquire their poses since pose actions don't seem to work
+		for (size_t i = 0; i < vr_devices.m_numDevices; ++i)
+		{
+			vr_src::TrackedDevicePose_t outputPose;
+			vr_src::TrackedDevicePose_t gamePose;
+			auto err = __super::GetLastPoseForTrackedDeviceIndex(vr_devices.m_deviceIndex[i], &outputPose, &gamePose);
+			if (err == vr_src::VRCompositorError_None)
+			{
+				NiTransform xForm;
+				HmdMatrixToNiTransform(xForm, gamePose.mDeviceToAbsoluteTracking);
+				// TODO: Fire events that plugins can capture to acquire tracker data
+				continue;
+			}
+		}
+
+		return result;
+	};
+
+	void SetTargetCompositor(vr_dst::IVRCompositor* compositor)
+	{
+		m_compositor = compositor;
+	}
 };
 
 void * VR_CALLTYPE Hook_VR_GetGenericInterface_Execute(const char *pchInterfaceVersion, vr_src::EVRInitError *peError)
 {
+	// If version retarget queries fail, fallback to default interfaces
 	if (_stricmp(pchInterfaceVersion, vr_src::IVRSystem_Version) == 0)
 	{
-		return new IVRSystemHooked(static_cast<vr_dst::IVRSystem*>(VR_GetGenericInterface_RealFunc(vr_dst::IVRSystem_Version, peError)));
+		static IVRSystemHooked system;
+		void* baseSystem = VR_GetGenericInterface_RealFunc(vr_dst::IVRSystem_Version, peError);
+		if (baseSystem) {
+			system.SetTargetSystem(static_cast<vr_dst::IVRSystem*>(baseSystem));
+			return &system;
+		}
+	}
+	else if (_stricmp(pchInterfaceVersion, vr_src::IVRCompositor_Version) == 0)
+	{
+		static IVRCompositorHooked system;
+		void* baseCompositor = VR_GetGenericInterface_RealFunc(vr_dst::IVRCompositor_Version, peError);
+		if (baseCompositor) {
+			system.SetTargetCompositor(static_cast<vr_dst::IVRCompositor*>(baseCompositor));
+			return &system;
+		}
 	}
 	return VR_GetGenericInterface_RealFunc(pchInterfaceVersion, peError);
 }
 
 void PollNextEvent_Hooked(BSOpenVR* thisPtr)
 {
-	if (!vr_context.VRInput()->IsUsingLegacyInput())
+	if (vr_actionHandles.m_enabled)
 	{
 		vr::VRActiveActionSet_t actionSet;
 		actionSet.ulActionSet = vr_actionHandles.m_legacySetHandle;
@@ -207,6 +265,8 @@ void PollNextEvent_Hooked(BSOpenVR* thisPtr)
 		actionSet.ulSecondaryActionSet = vr::k_ulInvalidInputValueHandle;
 		actionSet.nPriority = 10;
 		vr::EVRInputError err = vr_context.VRInput()->UpdateActionState(&actionSet, sizeof(vr::VRActiveActionSet_t), 1);
+
+		// TODO: Maybe expose this to plugins?
 	}
 
 	thisPtr->PollNextEvent_Internal();

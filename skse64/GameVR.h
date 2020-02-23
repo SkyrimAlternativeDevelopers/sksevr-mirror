@@ -64,7 +64,9 @@ public:
 		kControllerType_Oculus,
 		kControllerType_WindowsMR
 	};
-
+	
+	// This actually gives a number depending on what the Tracking system is returned as
+	// when a controller type is simulated the underlying tracking system is changed by openvr before hitting the game
 	virtual SInt32 GetControllerType() = 0; // Gets unk398
 	virtual void Unk_17() = 0; // Creates the controller meshes?
 };
@@ -74,11 +76,30 @@ STATIC_ASSERT(sizeof(BSVRInterface) == 0x110);
 class BSOpenVR : public BSVRInterface
 {
 public:
+
+	// Same structure as openvr_1_0_12.h just with public access
+	struct COpenVRContext
+	{
+		vr_1_0_12::IVRSystem			*m_pVRSystem;
+		vr_1_0_12::IVRChaperone			*m_pVRChaperone;
+		vr_1_0_12::IVRChaperoneSetup	*m_pVRChaperoneSetup;
+		vr_1_0_12::IVRCompositor		*m_pVRCompositor;
+		vr_1_0_12::IVROverlay			*m_pVROverlay;
+		vr_1_0_12::IVRResources			*m_pVRResources;
+		vr_1_0_12::IVRRenderModels		*m_pVRRenderModels;
+		vr_1_0_12::IVRExtendedDisplay	*m_pVRExtendedDisplay;
+		vr_1_0_12::IVRSettings			*m_pVRSettings;
+		vr_1_0_12::IVRApplications		*m_pVRApplications;
+		vr_1_0_12::IVRTrackedCamera		*m_pVRTrackedCamera;
+		vr_1_0_12::IVRScreenshots		*m_pVRScreenshots;
+		vr_1_0_12::IVRDriverManager		*m_pVRDriverManager;
+	};
+
 	UInt64							unk110;				// 110 - Compositor Initialized?
 	void*							unk118;				// 118
 	UInt64							unk120;				// 120
 	float							unk128[(0x190 - 0x128) >> 2];	// 128
-	vr_1_0_12::COpenVRContext		vrContext;			// 190
+	COpenVRContext					vrContext;			// 190
 	vr_1_0_12::VROverlayHandle_t	inputOverlay;		// 1F8 - Overlay handle for Input
 	UInt64							unk200;				// 200
 	vr_1_0_12::IVRSystem*			vrSystem;			// 208 - vrclient_x64 - IVRSystem_019
@@ -104,12 +125,19 @@ public:
 	Data238					unk238[4];			// 238
 	UInt64					unk338[(0x388 - 0x338) >> 3];
 	NiPointer<NiNode>		controller[2];		// 388 - Left, Right
-	UInt64					unk398;				// 398
-	float					unk3A0[(0x408 - 0x3A0) >> 2];
+	UInt32					unk398;				// 398
+	NiTransform				leftEye;			// 39C
+	NiTransform				rightEye;			// 3D0
 
 	DEFINE_MEMBER_FN_0(PollNextEvent_Internal, void, 0x00C53E30);
 };
 STATIC_ASSERT(offsetof(BSOpenVR, controller) == 0x388);
+STATIC_ASSERT(offsetof(BSOpenVR, leftEye) == 0x39C);
+STATIC_ASSERT(offsetof(BSOpenVR, rightEye) == 0x3D0);
 STATIC_ASSERT(sizeof(BSOpenVR) == 0x408);
 
 extern RelocPtr<BSOpenVR *> g_openVR;
+
+
+typedef NiTransform&(*_HmdMatrixToNiTransform)(NiTransform& transform, const vr_1_0_12::HmdMatrix34_t& hmdMatrix);
+extern RelocAddr<_HmdMatrixToNiTransform> HmdMatrixToNiTransform;

@@ -34,7 +34,7 @@ PlayerControls * PlayerControls::ctor_Hook(void)
 		_MESSAGE("Failed to register SKSE inputEventHandler");
 	}
 
-	RegisterActionBindings();
+	InternalVR::RegisterActionBindings();
 
 	PluginManager::Dispatch_Message(0, SKSEMessagingInterface::kMessage_InputLoaded, NULL, 0, NULL);
 
