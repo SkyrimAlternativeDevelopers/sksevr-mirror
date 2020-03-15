@@ -24,9 +24,10 @@ public:
 
 	UInt32			GetNumPlugins(void);
 
-	static void *		QueryInterface(UInt32 id);
-	static PluginHandle	GetPluginHandle(void);
-	static UInt32		GetReleaseIndex(void);
+	static void *				QueryInterface(UInt32 id);
+	static PluginHandle			GetPluginHandle(void);
+	static UInt32				GetReleaseIndex(void);
+	static const PluginInfo*	GetPluginInfo(const char* name);
 
 	static void * GetEventDispatcher(UInt32 dispatcherId);
 

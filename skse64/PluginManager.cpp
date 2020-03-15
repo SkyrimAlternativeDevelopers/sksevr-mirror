@@ -6,6 +6,7 @@
 #include "skse64_common/skse_version.h"
 #include "skse64/PapyrusEvents.h"
 #include "skse64_common/BranchTrampoline.h"
+#include "skse64/InternalVR.h"
 
 PluginManager	g_pluginManager;
 
@@ -38,7 +39,8 @@ static const SKSEInterface g_SKSEInterface =
 
 	PluginManager::QueryInterface,
 	PluginManager::GetPluginHandle,
-	PluginManager::GetReleaseIndex
+	PluginManager::GetReleaseIndex,
+	PluginManager::GetPluginInfo
 };
 
 #ifdef RUNTIME
@@ -96,6 +98,16 @@ static const SKSETrampolineInterface g_SKSETrampolineInterface =
 	SKSETrampolineInterface::kInterfaceVersion,
 	AllocateFromSKSEBranchPool,
 	AllocateFromSKSELocalPool
+};
+
+static const SKSEVRInterface g_SKSEVRInterface =
+{
+	SKSEVRInterface::kInterfaceVersion,
+	SKSEVRInterface::kOpenVRSourceVersion,
+	SKSEVRInterface::kOpenVRTargetVersion,
+	InternalVR::IsActionsEnabled,
+	InternalVR::RegisterForControllerState,
+	InternalVR::RegisterForPoses
 };
 #endif
 
@@ -201,6 +213,9 @@ void * PluginManager::QueryInterface(UInt32 id)
 	case kInterface_Trampoline:
 		result = (void *)&g_SKSETrampolineInterface;
 		break;
+	case kInterface_VR:
+		result = (void *)&g_SKSEVRInterface;
+		break;
 
 	default:
 		_WARNING("unknown QueryInterface %08X", id);
@@ -223,6 +238,11 @@ PluginHandle PluginManager::GetPluginHandle(void)
 UInt32 PluginManager::GetReleaseIndex( void )
 {
 	return SKSE_VERSION_RELEASEIDX;
+}
+
+const PluginInfo*	PluginManager::GetPluginInfo(const char* name)
+{
+	return g_pluginManager.GetInfoByName(name);
 }
 
 bool PluginManager::FindPluginDirectory(void)

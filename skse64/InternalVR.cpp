@@ -11,6 +11,14 @@ vr::COpenVRContext vr_context(vr_exports);
 vr::ActionHandles vr_actionHandles;
 vr::TrackedDevices vr_devices;
 
+SortedPluginCallbacks<SKSEVRInterface::ControllerStateCallback>	g_controllerStateCallbacks;
+SortedPluginCallbacks<SKSEVRInterface::WaitGetPosesCallback>	g_poseCallbacks;
+
+bool InternalVR::IsActionsEnabled()
+{
+	return vr_actionHandles.m_enabled;
+}
+
 void InternalVR::RegisterActionBindings()
 {
 	UInt32	actionBindings = 0;
@@ -190,5 +198,42 @@ void InternalVR::LoadActionHandles(bool reload)
 			}
 #endif
 		}
+	}
+}
+
+void InternalVR::RegisterForControllerState(PluginHandle plugin, int32_t sortOrder, SKSEVRInterface::ControllerStateCallback callback)
+{
+	IScopedCriticalSection locker(&g_controllerStateCallbacks.m_lock);
+	_MESSAGE("Plugin %d registered for controller state with sort %d", plugin, sortOrder);
+	g_controllerStateCallbacks.m_callbacks.insert({ plugin, sortOrder, callback });
+}
+
+void InternalVR::RegisterForPoses(PluginHandle plugin, int32_t sortOrder, SKSEVRInterface::WaitGetPosesCallback callback)
+{
+	IScopedCriticalSection locker(&g_poseCallbacks.m_lock);
+	_MESSAGE("Plugin %d registered for poses with sort %d", plugin, sortOrder);
+	g_poseCallbacks.m_callbacks.insert({ plugin, sortOrder, callback });
+}
+
+void InternalVR::ExecuteControllerStateCallbacks(vr_src::TrackedDeviceIndex_t unControllerDeviceIndex, vr_src::VRControllerState_t* pControllerState, uint32_t unControllerStateSize)
+{
+	IScopedCriticalSection locker(&g_controllerStateCallbacks.m_lock);
+
+	bool state = true;
+	if (vr_context.VRSystem()->IsTrackedDeviceConnected(unControllerDeviceIndex))
+	{
+		for (const auto& item : g_controllerStateCallbacks.m_callbacks)
+		{
+			item.callback(unControllerDeviceIndex, pControllerState, unControllerStateSize, state);
+		}
+	}
+}
+
+void InternalVR::ExecutePoseCallbacks(vr_src::TrackedDevicePose_t* pRenderPoseArray, uint32_t unRenderPoseArrayCount, vr_src::TrackedDevicePose_t* pGamePoseArray, uint32_t unGamePoseArrayCount)
+{
+	IScopedCriticalSection locker(&g_poseCallbacks.m_lock);
+	for (const auto& item : g_poseCallbacks.m_callbacks)
+	{
+		item.callback(pRenderPoseArray, unRenderPoseArrayCount, pGamePoseArray, unGamePoseArrayCount);
 	}
 }

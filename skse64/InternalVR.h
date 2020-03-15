@@ -1,11 +1,14 @@
 #pragma once
 
+#include "skse64/PluginAPI.h"
+
 // These openvr headers have been modified to have a fixed namespace
 // so that both headers may be included, this is for version retargeting
 // This facilitates retargeting Skyrims IVRSystem_019 to the target version
 
 #include "common/ICriticalSection.h"
 #include <unordered_map>
+#include <set>
 
 #ifndef OPENVR_INTERFACE_INTERNAL
 #define OPENVR_INTERFACE_INTERNAL
@@ -485,9 +488,44 @@ extern vr_dst::COpenVRContext vr_context;
 extern vr_dst::ActionHandles vr_actionHandles;
 extern vr_dst::TrackedDevices vr_devices;
 
+template<typename T>
+struct SortedPluginItem
+{
+	PluginHandle handle;
+	int32_t sortOrder;
+	T callback;
+
+	bool operator<(const SortedPluginItem<T>& other) const
+	{
+		if (sortOrder == other.sortOrder)
+		{
+			return handle < other.handle;
+		}
+
+		return sortOrder < other.sortOrder;
+	}
+};
+
+template<typename T>
+struct SortedPluginCallbacks
+{
+	std::set<SortedPluginItem<T>>	m_callbacks;
+	ICriticalSection				m_lock;
+};
+
+extern SortedPluginCallbacks<SKSEVRInterface::ControllerStateCallback>	g_controllerStateCallbacks;
+extern SortedPluginCallbacks<SKSEVRInterface::WaitGetPosesCallback>		g_poseCallbacks;
+
 namespace InternalVR
 {
 	void RegisterActionBindings();
 	void UpdateTrackedDevices();
 	void LoadActionHandles(bool reload = false);
+	bool IsActionsEnabled();
+
+	void RegisterForControllerState(PluginHandle plugin, int32_t sortOrder, SKSEVRInterface::ControllerStateCallback callback);
+	void RegisterForPoses(PluginHandle plugin, int32_t sortOrder, SKSEVRInterface::WaitGetPosesCallback callback);
+
+	void ExecuteControllerStateCallbacks(vr_src::TrackedDeviceIndex_t unControllerDeviceIndex, vr_src::VRControllerState_t *pControllerState, uint32_t unControllerStateSize);
+	void ExecutePoseCallbacks(vr_src::TrackedDevicePose_t* pRenderPoseArray, uint32_t unRenderPoseArrayCount, vr_src::TrackedDevicePose_t* pGamePoseArray, uint32_t unGamePoseArrayCount);
 }

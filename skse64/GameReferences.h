@@ -335,9 +335,9 @@ public:
 	virtual void Unk_A3(void);
 	virtual void Unk_A4(void);
 	virtual void Unk_A5(void);
-	virtual void DrawSheatheWeapon(bool draw);
+	virtual void Unk_A6(void);
 	virtual void Unk_A7(void);
-	virtual void Unk_A8(void);
+	virtual void DrawSheatheWeapon(bool draw);
 	virtual void Unk_A9(void);
 	virtual void Unk_AA(void);
 	virtual void Unk_AB(void);
@@ -362,8 +362,6 @@ public:
 	virtual void Unk_BE(void);
 	virtual void Unk_BF(void);
 	virtual void Unk_C0(void);
-	virtual void Unk_C0_1(void);
-	virtual void Unk_C0_2(void);
 	virtual void Unk_C1(void);
 	virtual void Unk_C2(void);
 	virtual void Unk_C3(void);
@@ -418,9 +416,11 @@ public:
 	virtual void Unk_F4(void);
 	virtual void Unk_F5(void);
 	virtual void Unk_F6(void);
-	virtual void AdvanceSkill(UInt32 skillId, float points, UInt32 unk1, UInt32 unk2);
+	virtual void Unk_F7(void);
 	virtual void Unk_F8(void);
-	virtual void Unk_F9(void);
+	virtual void AdvanceSkill(UInt32 skillId, float points, UInt32 unk1, UInt32 unk2);
+	virtual void Unk_FA(void);
+	virtual void Unk_FB(void);
 	virtual void VisitPerks(void); // BGSPerk::FindPerkInRanksVisitor
 	virtual void AddPerk(BGSPerk * perk, UInt32 unk1);
 	virtual void RemovePerk(BGSPerk * perk);

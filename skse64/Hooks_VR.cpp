@@ -118,11 +118,21 @@ public:
 
 				// Not sure this even does anything useful in Skyrim but we'll at least make it unique
 				pControllerState->unPacketNum = ++packetNum;
+				InternalVR::ExecuteControllerStateCallbacks(unControllerDeviceIndex, pControllerState, unControllerStateSize);
 				return true;
+			}
+			else
+			{
+				return false;
 			}
 		}
 
-		return __super::GetControllerState(unControllerDeviceIndex, pControllerState, unControllerStateSize);
+		bool result = __super::GetControllerState(unControllerDeviceIndex, pControllerState, unControllerStateSize);
+		if (result) {
+			InternalVR::ExecuteControllerStateCallbacks(unControllerDeviceIndex, pControllerState, unControllerStateSize);
+		}
+
+		return result;
 	}
 
 	virtual bool GetControllerStateWithPose(vr_src::ETrackingUniverseOrigin eOrigin, vr_src::TrackedDeviceIndex_t unControllerDeviceIndex, vr_src::VRControllerState_t *pControllerState, uint32_t unControllerStateSize, vr_src::TrackedDevicePose_t *pTrackedDevicePose) override
@@ -170,7 +180,7 @@ public:
 	{
 		vr_dst::VREvent_t realEvent;
 		bool result = m_system->PollNextEvent(&realEvent, sizeof(vr_dst::VREvent_t));
-		if (result)
+		if (result && vr_actionHandles.m_enabled)
 		{
 			switch (realEvent.eventType)
 			{
@@ -207,6 +217,7 @@ public:
 	{
 		auto result = __super::WaitGetPoses(pRenderPoseArray, unRenderPoseArrayCount, pGamePoseArray, unGamePoseArrayCount);
 
+#if 0
 		// Traverse all the connected trackers and acquire their poses since pose actions don't seem to work
 		for (size_t i = 0; i < vr_devices.m_numDevices; ++i)
 		{
@@ -221,7 +232,8 @@ public:
 				continue;
 			}
 		}
-
+#endif
+		InternalVR::ExecutePoseCallbacks(pRenderPoseArray, unRenderPoseArrayCount, pGamePoseArray, unGamePoseArrayCount);
 		return result;
 	};
 
@@ -281,12 +293,9 @@ void Hooks_VR_Init(void)
 
 	// This occurs in Init on purpose so plugins can wrap this interface, SKSE should be first
 	// so that it can emulate GetControllerState and pass the data along to existing plugins wrapping this interface
-	UInt32 vrInterfaceHooked = 0;
-	if (GetConfigOption_UInt32("Input", "bActionBindings", &vrInterfaceHooked) && vrInterfaceHooked)
-	{
-		VR_GetGenericInterface_RealFunc = (vr::Exports::VR_GetGenericInterface)*(uintptr_t *)vr::IAT::VR_GetGenericInterface;
-		SafeWrite64(vr::IAT::VR_GetGenericInterface, (uintptr_t)Hook_VR_GetGenericInterface_Execute);
-	}
+
+	VR_GetGenericInterface_RealFunc = (vr::Exports::VR_GetGenericInterface)*(uintptr_t *)vr::IAT::VR_GetGenericInterface;
+	SafeWrite64(vr::IAT::VR_GetGenericInterface, (uintptr_t)Hook_VR_GetGenericInterface_Execute);
 
 	vr_exports.VR_GetGenericInterface = (vr::Exports::VR_GetGenericInterface)*(uintptr_t *)vr::IAT::VR_GetGenericInterface;
 	vr_exports.VR_InitInternal2 = (vr::Exports::VR_InitInternal2)*(uintptr_t *)vr::IAT::VR_InitInternal2;
